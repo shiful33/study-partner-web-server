@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -25,6 +25,15 @@ async function run() {
 
     const db = client.db("study-db");
     const studyCollection = db.collection("studies");
+    const createPartnerProfileCollection = db.collection("createPartners");
+    const findPartnerCollection = db.collection("findPartners");
+    const userCollection = db.collection("users");
+
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+      const result = await usersCollection.insertOne(newUser);
+      res.send(result);
+    })
 
     //Studies Get API call
     app.get("/studies", async (req, res) => {
@@ -37,8 +46,13 @@ async function run() {
       }
     });
 
-
-
+    //Partner Details Get API call
+    app.get('/studies/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await studyCollection.findOne(query)
+      res.send(result);
+    })
 
 
     await client.db("admin").command({ ping: 1 });
