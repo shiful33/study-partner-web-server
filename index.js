@@ -24,7 +24,6 @@ async function run() {
     await client.connect();
     console.log("Connected to MongoDB!");
 
-    
     const db = client.db("study-db");
 
     // Collections
@@ -33,7 +32,7 @@ async function run() {
     const myConnectionCollection = db.collection("myConnections");
     const userCollection = db.collection("users");
 
-    // 1. Create User
+    // Create User
     app.post("/users", async (req, res) => {
       try {
         const result = await userCollection.insertOne(req.body);
@@ -43,7 +42,7 @@ async function run() {
       }
     });
 
-    // 2. Get Top 6 Studies (Home)
+    // Get Top 6 Studies (Home)
     app.get("/studies", async (req, res) => {
       try {
         const result = await studyCollection
@@ -57,7 +56,7 @@ async function run() {
       }
     });
 
-    // 3. Get Single Study Details
+    // Get Single Study Details
     app.get("/studies/:id", async (req, res) => {
       try {
         const id = req.params.id;
@@ -70,7 +69,7 @@ async function run() {
       }
     });
 
-    // 4. Get All Find Partners
+    // Get All Find Partners
     app.get("/find-partners", async (req, res) => {
       try {
         const result = await findPartnerCollection
@@ -83,7 +82,7 @@ async function run() {
       }
     });
 
-    // 5. Get Single Find Partner Details
+    // Get Single Find Partner Details
     app.get("/find-partners/:id", async (req, res) => {
       try {
         const id = req.params.id;
@@ -98,7 +97,7 @@ async function run() {
       }
     });
 
-    // 6. Create Partner Profile (from Form)
+    // Create Partner Profile
     app.post("/create-partner", async (req, res) => {
       try {
         const newPartner = { ...req.body, createdAt: new Date() };
@@ -109,7 +108,7 @@ async function run() {
       }
     });
 
-    // 7. Send Partner Request → Save to MyConnections
+    // Send Partner Request & Save to MyConnections
     app.post("/send-partner-request", async (req, res) => {
       try {
         const partnerData = req.body;
@@ -127,6 +126,7 @@ async function run() {
         // Save to MyConnections
         await myConnectionCollection.insertOne({
           ...partnerData,
+          _id: partnerData._id,
           requestedAt: new Date(),
         });
 
@@ -137,7 +137,7 @@ async function run() {
       }
     });
 
-    // 8. Get My Connections
+    // Get My Connections
     app.get("/my-connections", async (req, res) => {
       try {
         const result = await myConnectionCollection
@@ -150,28 +150,38 @@ async function run() {
       }
     });
 
-    // 9. Delete Partner from MyConnections
+    // Delete Partner from MyConnections
+    const { ObjectId } = require("mongodb");
+
     app.delete("/delete-partner/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        const result = await myConnectionCollection.deleteOne({
-          _id: new ObjectId(id),
-        });
+
+        let result = await myConnectionCollection.deleteOne({ _id: id });
+
         if (result.deletedCount === 0) {
-          return res.status(404).send({ message: "Partner not found." });
+          if (ObjectId.isValid(id)) {
+            result = await myConnectionCollection.deleteOne({
+              _id: new ObjectId(id),
+            });
+          }
         }
-        res.send({ success: true, deletedCount: result.deletedCount });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).send({ message: "Partner not found" });
+        }
+
+        res.send({ success: true, message: "Partner removed" });
       } catch (error) {
-        res.status(500).send({ message: "Failed to delete." });
+        console.error("Delete error:", error);
+        res.status(500).send({ message: "Server error" });
       }
     });
 
-    // Root Route
     app.get("/", (req, res) => {
       res.send("Study Partner Server is Running!");
     });
 
-    // Start Server
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port}`);
     });
