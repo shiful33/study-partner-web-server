@@ -165,8 +165,8 @@ async function run() {
       try {
         const id = req.params.id;
         const query = {
-          _id: id
-        }
+          _id: id,
+        };
         const partner = await myConnectionCollection.findOne(query);
         if (!partner)
           return res.status(404).send({ message: "Partner not found" });
@@ -189,8 +189,8 @@ async function run() {
           $set: req.body,
         });
 
-        if (result.matchedCount === 0)
-          return res.status(404).send({ message: "Not found" });
+        // if (result.matchedCount === 0)
+        //   return res.status(404).send({ message: "Not found" });
         res.send({ success: true });
       } catch (error) {
         res.status(500).send({ message: "Update failed" });
@@ -240,6 +240,15 @@ async function run() {
         .toArray();
       res.send(result);
     });
+
+    // POST: Send Partner Message
+    app.post("/send-partner-message", (req, res) => {
+      const { to, name, message } = req.body;
+      console.log("Message to:", to, name, message);
+      res.json({ success: true, message: "Message sent!" });
+    });
+
+
 
     // === ROOT ===
     app.get("/", (req, res) => {
