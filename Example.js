@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+// const admin = require("firebase-admin");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 3000;
@@ -35,7 +36,7 @@ async function run() {
     const db = client.db("study-db");
     const studyCollection = db.collection("studies");
     const findPartnerCollection = db.collection("findPartners");
-    const myConnectionCollection = db.collection("myConnection");
+    const myConnectionCollection = db.collection("myConnections");
     const userCollection = db.collection("users");
 
     // USER POST
@@ -206,26 +207,23 @@ async function run() {
     });
 
     // UPDATE PARTNER
-  app.post("/update-partner", async (req, res) => {
-  try {
-    const { _id, ...updateData } = req.body;
-
-    const result = await findPartnerCollection.updateOne(
-      { _id: _id }, 
-      { $set: updateData },
-   
-    );
-
-    if (result) {
-      res.send({ success: true, message: "Partner updated successfully", data: result });
-    } else {
-      res.status(404).send({ success: false, message: "Partner not found" });
-    }
-  } catch (error) {
-    console.error("Update partner error:", error);
-    res.status(500).send({ success: false, message: "Internal Server Error" });
-  }
-});
+    app.post("/update-partner", async (req, res) => {
+      try {
+        const { _id, ...updateData } = req.body;
+        let result;
+        if (_id) {
+          result = await findPartnerCollection.updateOne(
+            { _id: new ObjectId(_id) },
+            { $set: updateData }
+          );
+        } else {
+          result = await findPartnerCollection.insertOne(updateData);
+        }
+        res.send({ success: true, insertedId: result.insertedId });
+      } catch (error) {
+        res.status(500).send({ message: "Update failed" });
+      }
+    });
 
     // GET ALL TESTIMONIALS
     const testimonialCollection = db.collection("testimonials");
